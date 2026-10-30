@@ -207,8 +207,13 @@ Visit `http://localhost:8000/dashboard` in your browser.
 
 ## 🎯 Golden Path Demo (GP-01 Walkthrough)
 
-To witness the complete lifecycle of timeout handling and Quality Engineering intervention:
+To witness the complete lifecycle of timeout handling and Quality Engineering intervention in a single command:
 
+```bash
+python scripts/demo_golden_path_gp01.py
+```
+
+### What GP-01 verifies:
 1. **Scenario Setup:** Set `PL_DEFECT_BUG_004=false` and run Provider Simulator with scenario `timeout_success`.
 2. **Execution:** Merchant creates a payment and confirms. Provider simulator delays response.
 3. **System Behavior:** Payment transitions to `UNKNOWN`. Background worker (`StatusWorker`) polls provider with exponential backoff.
@@ -216,7 +221,8 @@ To witness the complete lifecycle of timeout handling and Quality Engineering in
 5. **Quality Gate Evaluation:** 
    - Toggle `PL_DEFECT_BUG_004=true` (simulating premature failure marking on timeout).
    - Run regression selector $\rightarrow$ selects TS-026, TS-027, TS-028.
-   - Tests fail $\rightarrow$ SentinelQA Release Gate issues **BLOCK** decision with Rule ID `BLOCK-P0-FAIL`.
+   - Tests fail with double charge detection $\rightarrow$ SentinelQA Release Gate issues **BLOCK** decision with Rule ID `RG-FAIL-P0-BLOCK`.
+6. **Failure Analysis & Audited SQL:** Categorized as `ASSERTION` error and displays the audited SQL query for timeout recovery metrics.
 
 ---
 
@@ -237,3 +243,4 @@ For in-depth domain specifications and artifacts, see the [`docs/`](docs/) direc
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
