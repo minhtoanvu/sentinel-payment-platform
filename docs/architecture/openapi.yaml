@@ -1,0 +1,520 @@
+openapi: 3.0.3
+info:
+  title: Payment Lab API (simulated)
+  version: 0.1.0-draft
+  description: |
+    API contract sơ bộ cho Payment Lab — hệ thống thanh toán MÔ PHỎNG phục vụ học tập.
+    Không xử lý tiền thật. Quy tắc nghiệp vụ: docs/domain/business-rules.md.
+    Mọi số tiền là số nguyên theo minor unit (VND exponent 0, USD exponent 2).
+servers:
+  - url: http://localhost:8000/api/v1
+tags:
+  - name: payments
+  - name: refunds
+  - name: webhooks
+  - name: reconciliation
+  - name: system
+
+paths:
+  /health:
+    get:
+      tags: [system]
+      summary: Kiểm tra sức khỏe dịch vụ
+      operationId: getHealth
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, example: ok }
+
+  /payments:
+    post:
+      tags: [payments]
+      summary: Tạo payment (FR-PAY-001/002/003)
+      operationId: createPayment
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreatePaymentRequest" }
+      responses:
+        "201":
+          description: Payment đã được tạo (hoặc replay, kèm header Idempotent-Replayed)
+          headers:
+            Idempotent-Replayed:
+              schema: { type: string, enum: ["true"] }
+              description: Có mặt khi response được replay từ idempotency record
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Payment" }
+        "400": { $ref: "#/components/responses/IdempotencyKeyRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+    get:
+      tags: [payments]
+      summary: Danh sách payment (FR-PAY-009)
+      operationId: listPayments
+      parameters:
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/PaymentStatus" } }
+        - { name: created_from, in: query, schema: { type: string, format: date-time } }
+        - { name: created_to, in: query, schema: { type: string, format: date-time } }
+        - { name: needs_review, in: query, schema: { type: boolean } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: cursor, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Trang kết quả (cursor pagination)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Payment" }
+                  next_cursor: { type: string, nullable: true }
+
+  /payments/{payment_id}:
+    get:
+      tags: [payments]
+      summary: Chi tiết payment kèm timeline
+      operationId: getPayment
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaymentDetail" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /payments/{payment_id}/confirm:
+    post:
+      tags: [payments]
+      summary: Confirm payment (FR-PAY-004/005)
+      operationId: confirmPayment
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      responses:
+        "200":
+          description: Kết quả sau confirm (SUCCEEDED, FAILED hoặc UNKNOWN)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Payment" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "410":
+          description: Payment đã hết hạn (PAYMENT_EXPIRED)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /payments/{payment_id}/cancel:
+    post:
+      tags: [payments]
+      summary: Hủy payment khi còn CREATED (FR-PAY-007)
+      operationId: cancelPayment
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      responses:
+        "200":
+          description: Đã hủy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Payment" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /payments/{payment_id}/refunds:
+    post:
+      tags: [refunds]
+      summary: Tạo refund (FR-REF-001..005)
+      operationId: createRefund
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateRefundRequest" }
+      responses:
+        "201":
+          description: Refund đã được tạo
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Refund" }
+        "400": { $ref: "#/components/responses/IdempotencyKeyRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+    get:
+      tags: [refunds]
+      summary: Danh sách refund của payment
+      operationId: listRefunds
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Refund" }
+                  refundable_amount: { type: integer, format: int64 }
+
+  /refunds/{refund_id}/approve:
+    post:
+      tags: [refunds]
+      summary: Duyệt refund lớn (maker-checker, FR-REF-006)
+      operationId: approveRefund
+      parameters:
+        - { name: refund_id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Đã duyệt
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Refund" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /webhooks/provider:
+    post:
+      tags: [webhooks]
+      summary: Nhận webhook từ provider (FR-WH-001..004)
+      operationId: receiveProviderWebhook
+      description: |
+        Chữ ký: HMAC-SHA256 trên chuỗi `{timestamp}.{raw_body}` với secret dùng chung.
+        Timestamp chấp nhận trong ±5 phút. Ack 2xx sau khi đã lưu sự kiện.
+      parameters:
+        - { name: X-Provider-Timestamp, in: header, required: true, schema: { type: integer, description: Unix epoch seconds } }
+        - { name: X-Provider-Signature, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WebhookEvent" }
+      responses:
+        "200":
+          description: Đã nhận (kể cả sự kiện trùng, STALE, IGNORED, ORPHAN)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  processing_status:
+                    type: string
+                    enum: [RECEIVED, PROCESSED, DUPLICATE, IGNORED, STALE, ORPHAN]
+        "401":
+          description: INVALID_SIGNATURE hoặc WEBHOOK_TIMESTAMP_OUT_OF_RANGE
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /reconciliation/runs:
+    post:
+      tags: [reconciliation]
+      summary: Tạo run đối soát từ settlement file (FR-REC-001..003)
+      operationId: createReconciliationRun
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [provider, business_date, file]
+              properties:
+                provider: { type: string }
+                business_date: { type: string, format: date }
+                file: { type: string, format: binary }
+      responses:
+        "201":
+          description: Run đã tạo và xử lý
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReconciliationRun" }
+        "422":
+          description: FILE_VALIDATION_FAILED hoặc dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+    get:
+      tags: [reconciliation]
+      summary: Danh sách run
+      operationId: listReconciliationRuns
+      parameters:
+        - { name: business_date, in: query, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ReconciliationRun" }
+
+  /reconciliation/runs/{run_id}/findings:
+    get:
+      tags: [reconciliation]
+      summary: Findings của một run
+      operationId: listFindings
+      parameters:
+        - { name: run_id, in: path, required: true, schema: { type: string } }
+        - { name: mismatch_type, in: query, schema: { $ref: "#/components/schemas/MismatchType" } }
+        - { name: status, in: query, schema: { type: string, enum: [OPEN, INVESTIGATING, RESOLVED, WRITTEN_OFF] } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Finding" }
+
+  /reconciliation/findings/{finding_id}:
+    patch:
+      tags: [reconciliation]
+      summary: Cập nhật vòng đời finding (FR-REC-004)
+      operationId: updateFinding
+      parameters:
+        - { name: finding_id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [INVESTIGATING, RESOLVED, WRITTEN_OFF] }
+                reason: { type: string, description: Bắt buộc khi RESOLVED hoặc WRITTEN_OFF }
+      responses:
+        "200":
+          description: Đã cập nhật
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Finding" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: 8–64 ký tự [A-Za-z0-9_-]; hiệu lực 24 giờ theo (merchant, endpoint, key)
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 64
+        pattern: "^[A-Za-z0-9_-]+$"
+    PaymentId:
+      name: payment_id
+      in: path
+      required: true
+      schema: { type: string, example: pay_01HZX0EXAMPLE }
+
+  responses:
+    IdempotencyKeyRequired:
+      description: IDEMPOTENCY_KEY_REQUIRED
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Forbidden:
+      description: MERCHANT_INACTIVE, SELF_APPROVAL_NOT_ALLOWED hoặc không đủ quyền
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    NotFound:
+      description: NOT_FOUND (không tồn tại hoặc không thuộc quyền truy cập)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Conflict:
+      description: INVALID_STATE_TRANSITION, ORDER_ALREADY_PAID, REQUEST_IN_PROGRESS, PAYMENT_NOT_REFUNDABLE
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Unprocessable:
+      description: Lỗi validate hoặc quy tắc nghiệp vụ (VALIDATION_ERROR, AMOUNT_*, UNSUPPORTED_CURRENCY, IDEMPOTENCY_KEY_REUSED, REFUND_*)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  schemas:
+    Currency:
+      type: string
+      enum: [VND, USD]
+    PaymentStatus:
+      type: string
+      enum: [CREATED, PROCESSING, UNKNOWN, SUCCEEDED, FAILED, CANCELED, EXPIRED]
+    RefundStatus:
+      type: string
+      enum: [PENDING_APPROVAL, REQUESTED, PROCESSING, UNKNOWN, SUCCEEDED, FAILED, REJECTED]
+    MismatchType:
+      type: string
+      enum:
+        - MISSING_IN_PROVIDER
+        - MISSING_IN_INTERNAL
+        - DUPLICATE_IN_PROVIDER
+        - DUPLICATE_IN_INTERNAL
+        - AMOUNT_MISMATCH
+        - CURRENCY_MISMATCH
+        - STATUS_MISMATCH
+        - CUTOFF_TIMING_DIFF
+
+    CreatePaymentRequest:
+      type: object
+      required: [amount, currency, merchant_reference, payment_method_id]
+      properties:
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Minor unit. VND 1.000–50.000.000; USD 50–1.000.000 (cent).
+          example: 500000
+        currency: { $ref: "#/components/schemas/Currency" }
+        merchant_reference: { type: string, maxLength: 64, example: ORDER-10293 }
+        payment_method_id: { type: string }
+        description: { type: string, maxLength: 255 }
+
+    Payment:
+      type: object
+      required: [id, amount, currency, status, merchant_reference, created_at]
+      properties:
+        id: { type: string, example: pay_01HZX0EXAMPLE }
+        amount: { type: integer, format: int64 }
+        currency: { $ref: "#/components/schemas/Currency" }
+        status: { $ref: "#/components/schemas/PaymentStatus" }
+        merchant_reference: { type: string }
+        refunded_amount: { type: integer, format: int64 }
+        refundable_amount: { type: integer, format: int64 }
+        needs_review: { type: boolean }
+        failure_code: { type: string, nullable: true }
+        expires_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        succeeded_at: { type: string, format: date-time, nullable: true }
+
+    PaymentDetail:
+      allOf:
+        - $ref: "#/components/schemas/Payment"
+        - type: object
+          properties:
+            timeline:
+              type: array
+              items:
+                type: object
+                required: [from_status, to_status, at]
+                properties:
+                  from_status: { type: string, nullable: true }
+                  to_status: { type: string }
+                  reason: { type: string }
+                  actor: { type: string }
+                  correlation_id: { type: string }
+                  at: { type: string, format: date-time }
+
+    CreateRefundRequest:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount: { type: integer, format: int64, minimum: 1 }
+        currency: { $ref: "#/components/schemas/Currency" }
+        reason: { type: string, maxLength: 255 }
+
+    Refund:
+      type: object
+      required: [id, payment_id, amount, currency, status]
+      properties:
+        id: { type: string, example: ref_01HZX0EXAMPLE }
+        payment_id: { type: string }
+        amount: { type: integer, format: int64 }
+        currency: { $ref: "#/components/schemas/Currency" }
+        status: { $ref: "#/components/schemas/RefundStatus" }
+        created_by: { type: string }
+        approved_by: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    WebhookEvent:
+      type: object
+      required: [event_id, type, data]
+      properties:
+        event_id: { type: string }
+        type:
+          type: string
+          example: payment.succeeded
+        provider_sequence: { type: integer, format: int64 }
+        created_at: { type: string, format: date-time }
+        data:
+          type: object
+          additionalProperties: true
+
+    ReconciliationRun:
+      type: object
+      properties:
+        id: { type: string }
+        provider: { type: string }
+        business_date: { type: string, format: date }
+        run_no: { type: integer }
+        status: { type: string, enum: [ACTIVE, SUPERSEDED] }
+        summary:
+          type: object
+          properties:
+            total_references: { type: integer }
+            matched: { type: integer }
+            with_mismatch: { type: integer }
+            quarantined: { type: integer }
+            open_findings: { type: integer }
+
+    Finding:
+      type: object
+      properties:
+        id: { type: string }
+        provider_reference: { type: string }
+        mismatch_type: { $ref: "#/components/schemas/MismatchType" }
+        severity: { type: string, enum: [LOW, MEDIUM, HIGH] }
+        status: { type: string, enum: [OPEN, INVESTIGATING, RESOLVED, WRITTEN_OFF] }
+        evidence:
+          type: object
+          additionalProperties: true
+        resolved_by: { type: string, nullable: true }
+        resolution_reason: { type: string, nullable: true }
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, correlation_id]
+          properties:
+            code: { type: string, example: AMOUNT_BELOW_MIN }
+            message: { type: string }
+            correlation_id: { type: string }
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  issue: { type: string }

@@ -1,0 +1,59 @@
+﻿requirement_id,module,priority,phase,title,use_cases,user_stories,business_rules,test_scenarios,seeded_defects,planned_coverage,execution_status
+FR-PAY-001,Payment Lab — Thanh toán,Must,1,Tạo payment,UC-01,US-001,BR-PAY-001;BR-PAY-002,TS-001;TS-005;TS-006,BUG-007,PLANNED,NOT_RUN
+FR-PAY-002,Payment Lab — Thanh toán,Must,1,Validate đầu vào,UC-01,US-001,BR-PAY-001;BR-PAY-002;BR-PAY-003;BR-PAY-004,TS-001;TS-002;TS-003;TS-004;TS-005;TS-006;TS-007;TS-008;TS-009;TS-010;TS-011,BUG-007,PLANNED,NOT_RUN
+FR-PAY-003,Payment Lab — Thanh toán,Must,1,Idempotency khi tạo payment,UC-01,US-002,BR-IDEM-001;BR-IDEM-002;BR-IDEM-003;BR-IDEM-004;BR-IDEM-005;BR-IDEM-006;BR-IDEM-007,TS-012;TS-013;TS-014;TS-015;TS-016;TS-017,BUG-002;BUG-018,PLANNED,NOT_RUN
+FR-PAY-004,Payment Lab — Thanh toán,Must,1,Confirm payment qua provider,UC-02,US-003,BR-PAY-006;BR-PAY-012,TS-018;TS-019;TS-031,BUG-008,PLANNED,NOT_RUN
+FR-PAY-005,Payment Lab — Thanh toán,Must,1,State machine,UC-02,US-003,BR-PAY-006;BR-PAY-007;BR-PAY-012;BR-PAY-014;BR-WH-006,TS-018;TS-020;TS-021;TS-024;TS-030;TS-031,BUG-008;BUG-011,PLANNED,NOT_RUN
+FR-PAY-006,Payment Lab — Thanh toán,Must,1,Xử lý timeout,UC-03,US-004,BR-PAY-008;BR-PAY-009,TS-026;TS-027;TS-028;TS-029;TS-067,BUG-004;BUG-014,PLANNED,NOT_RUN
+FR-PAY-007,Payment Lab — Thanh toán,Should,1,Hủy payment,UC-02,US-007,BR-PAY-006,TS-021;TS-022,,PLANNED,NOT_RUN
+FR-PAY-008,Payment Lab — Thanh toán,Should,1,Hết hạn payment,UC-02,US-007,BR-PAY-011,TS-023,,PLANNED,NOT_RUN
+FR-PAY-009,Payment Lab — Thanh toán,Must,1,Truy vấn payment,UC-02,US-006,BR-PAY-006,TS-065,,PLANNED,NOT_RUN
+FR-PAY-010,Payment Lab — Thanh toán,Must,1,Audit trail,UC-02,US-006,BR-PAY-010,TS-025,,PLANNED,NOT_RUN
+FR-PAY-011,Payment Lab — Thanh toán,Must,1,Chống thanh toán trùng đơn hàng,UC-01,US-005,BR-PAY-005,TS-032,,PLANNED,NOT_RUN
+FR-PAY-012,Payment Lab — Thanh toán,Should,1,Mô phỏng ví (wallet balance),UC-02,US-003,BR-PAY-013,TS-033,BUG-016,PLANNED,NOT_RUN
+FR-REF-001,Payment Lab — Hoàn tiền,Must,1,Hoàn tiền toàn phần,UC-04,US-008,BR-REF-001;BR-REF-003;BR-REF-005,TS-034;TS-037;TS-041,BUG-012,PLANNED,NOT_RUN
+FR-REF-002,Payment Lab — Hoàn tiền,Must,1,Hoàn tiền một phần nhiều lần,UC-04,US-009,BR-REF-002;BR-REF-003;BR-REF-004,TS-035;TS-038;TS-044,,PLANNED,NOT_RUN
+FR-REF-003,Payment Lab — Hoàn tiền,Must,1,Giới hạn refundable,UC-04,US-008;US-009,BR-REF-003;BR-REF-008,TS-036;TS-040,BUG-001;BUG-005,PLANNED,NOT_RUN
+FR-REF-004,Payment Lab — Hoàn tiền,Must,1,Idempotency khi refund,UC-04,US-002,BR-IDEM-003,TS-039,,PLANNED,NOT_RUN
+FR-REF-005,Payment Lab — Hoàn tiền,Should,1,Refund timeout/UNKNOWN,UC-04,US-010,BR-REF-003;BR-REF-006,TS-042,BUG-005,PLANNED,NOT_RUN
+FR-REF-006,Payment Lab — Hoàn tiền,Could,1,Maker-checker cho refund lớn,UC-04,US-011,BR-REF-007,TS-043,,PLANNED,NOT_RUN
+FR-WH-001,Payment Lab — Webhook,Must,1,Xác thực webhook,UC-05,US-012,BR-WH-001;BR-WH-002;BR-WH-004,TS-045;TS-046;TS-047;TS-068,BUG-006;BUG-015,PLANNED,NOT_RUN
+FR-WH-002,Payment Lab — Webhook,Must,1,Chống xử lý lặp webhook,UC-05,US-012,BR-WH-003,TS-048;TS-051,BUG-003,PLANNED,NOT_RUN
+FR-WH-003,Payment Lab — Webhook,Should,1,Xử lý sự kiện sai thứ tự,UC-03;UC-05,US-013,BR-PAY-014;BR-WH-005;BR-WH-006,TS-030;TS-049,BUG-011,PLANNED,NOT_RUN
+FR-WH-004,Payment Lab — Webhook,Must,1,Lưu sự kiện thô và kết quả xử lý,UC-05,US-012,BR-WH-001;BR-WH-004;BR-WH-007,TS-045;TS-050;TS-052;TS-053,,PLANNED,NOT_RUN
+FR-REC-001,Payment Lab — Đối soát,Must,1,Nhập settlement file,UC-06,US-014,BR-REC-002;BR-REC-008,TS-062,,PLANNED,NOT_RUN
+FR-REC-002,Payment Lab — Đối soát,Must,1,So khớp và phân loại mismatch,UC-06,US-014,BR-REC-001;BR-REC-003;BR-REC-004,TS-054;TS-055;TS-056;TS-057;TS-058;TS-059;TS-060,BUG-009;BUG-010,PLANNED,NOT_RUN
+FR-REC-003,Payment Lab — Đối soát,Must,1,Chạy lại đối soát idempotent,UC-06,US-014,BR-REC-005,TS-061,BUG-013,PLANNED,NOT_RUN
+FR-REC-004,Payment Lab — Đối soát,Should,1,Vòng đời xử lý mismatch,UC-06,US-015,BR-REC-006,TS-064,,PLANNED,NOT_RUN
+FR-REC-005,Payment Lab — Đối soát,Must,1,Báo cáo đối soát,UC-06,US-015,BR-REC-004;BR-REC-007,TS-054;TS-063,,PLANNED,NOT_RUN
+FR-SIM-001,Payment Lab — Provider Simulator & dữ liệu,Must,1,Kịch bản Provider Simulator,UC-11,US-016,BR-PAY-008,TS-085,,PLANNED,NOT_RUN
+FR-SIM-002,Payment Lab — Provider Simulator & dữ liệu,Must,1,Seed và fault injection,UC-11,US-016,BR-PAY-008,TS-085,,PLANNED,NOT_RUN
+FR-SIM-003,Payment Lab — Provider Simulator & dữ liệu,Could,1,Quy tắc velocity đơn giản,UC-11,US-031,BR-PAY-001,TS-084,,PLANNED,NOT_RUN
+FR-UI-001,Payment Lab — Giao diện,Must,1,Giao diện Payment Lab,UC-11,US-030,BR-PAY-002;BR-PAY-006;BR-PAY-008,TS-065;TS-066;TS-067,BUG-014,PLANNED,NOT_RUN
+FR-UI-002,Payment Lab — Giao diện,Should,1,"Giao diện refund, webhook, đối soát",UC-11,US-030,BR-REC-003;BR-WH-004,TS-094,,PLANNED,NOT_RUN
+FR-REQ-001,SentinelQA — Requirements & Traceability,Must,2,Quản lý requirement,UC-07,US-017,BR-GATE-004,TS-086,,PLANNED,NOT_RUN
+FR-REQ-002,SentinelQA — Requirements & Traceability,Must,2,Liên kết truy vết,UC-07,US-017,BR-GATE-004,TS-070,,PLANNED,NOT_RUN
+FR-REQ-003,SentinelQA — Requirements & Traceability,Must,2,Phát hiện khoảng trống coverage,UC-07,US-017,BR-GATE-004,TS-070,,PLANNED,NOT_RUN
+FR-TC-001,SentinelQA — Test management,Must,2,Quản lý test case,UC-07,US-017,BR-AI-001,TS-087,,PLANNED,NOT_RUN
+FR-RUN-001,SentinelQA — Thực thi & CI,Must,2,Thực thi test và lưu bằng chứng,UC-08,US-018,BR-QE-001,TS-074,,PLANNED,NOT_RUN
+FR-RUN-002,SentinelQA — Thực thi & CI,Must,2,Tích hợp CI,UC-08,US-018,BR-QE-001,TS-088,,PLANNED,NOT_RUN
+FR-IMP-001,SentinelQA — Change impact & regression selection,Should,3,Chọn regression test từ Git diff,UC-08,US-019,BR-QE-005,TS-075,,PLANNED,NOT_RUN
+FR-IMP-002,SentinelQA — Change impact & regression selection,Should,3,Fallback chạy toàn bộ,UC-08,US-019,BR-QE-005,TS-075,,PLANNED,NOT_RUN
+FR-IMP-003,SentinelQA — Change impact & regression selection,Should,3,Benchmark regression selection,UC-08,US-019,BR-QE-005,TS-089,,PLANNED,NOT_RUN
+FR-MUT-001,SentinelQA — Mutation testing,Should,2,Mutation testing,UC-08,US-020,BR-QE-002,TS-082,,PLANNED,NOT_RUN
+FR-FLK-001,SentinelQA — Failure & flaky intelligence,Should,3,Phân loại failure,UC-08,US-021,BR-QE-004,TS-083,,PLANNED,NOT_RUN
+FR-FLK-002,SentinelQA — Failure & flaky intelligence,Should,3,Phát hiện flaky test,UC-08,US-021,BR-QE-003,TS-076,,PLANNED,NOT_RUN
+FR-GATE-001,SentinelQA — Release gate,Must,3,Release gate Pass/Warn/Block,UC-10,US-022,BR-GATE-001;BR-GATE-002;BR-GATE-003;BR-GATE-004;BR-GATE-005;BR-GATE-006,TS-071;TS-072;TS-073,,PLANNED,NOT_RUN
+FR-GATE-002,SentinelQA — Release gate,Must,3,Lưu quyết định release,UC-10,US-022,BR-GATE-003;BR-GATE-005,TS-071,,PLANNED,NOT_RUN
+FR-AI-001,SentinelQA — AI Agents,Must,4,LLM adapter và structured output,UC-09,US-023,BR-AI-007,TS-080,,PLANNED,NOT_RUN
+FR-AI-002,SentinelQA — AI Agents,Must,4,Requirements-to-Tests Agent,UC-09,US-023,BR-AI-002;BR-AI-005,TS-078;TS-095,,PLANNED,NOT_RUN
+FR-AI-003,SentinelQA — AI Agents,Must,4,Human review và approval,UC-09,US-024,BR-AI-001,TS-077,,PLANNED,NOT_RUN
+FR-AI-004,SentinelQA — AI Agents,Should,4,Tool-using QA Agent,UC-09,US-025,BR-AI-003;BR-AI-004;BR-AI-005,TS-079;TS-095,,PLANNED,NOT_RUN
+FR-AI-005,SentinelQA — AI Agents,Could,4,Test repair loop,UC-09,US-026,BR-AI-001;BR-AI-006,TS-090,,PLANNED,NOT_RUN
+FR-EVAL-001,SentinelQA — AI Evaluation,Must,5,Evaluation dataset có phiên bản,UC-10,US-027,BR-AI-006;BR-AI-007,TS-081,,PLANNED,NOT_RUN
+FR-EVAL-002,SentinelQA — AI Evaluation,Must,5,Benchmark runner,UC-10,US-027,BR-AI-006;BR-AI-007,TS-081,,PLANNED,NOT_RUN
+FR-EVAL-003,SentinelQA — AI Evaluation,Should,5,AI regression gate trong CI,UC-10,US-027,BR-AI-007;BR-GATE-006,TS-091,,PLANNED,NOT_RUN
+FR-DASH-001,SentinelQA — Analytics & dashboard,Should,5,Dashboard QA,UC-11,US-028,BR-QE-001,TS-093,,PLANNED,NOT_RUN
+FR-DASH-002,SentinelQA — Analytics & dashboard,Should,5,Dashboard AI,UC-11,US-028,BR-QE-001,TS-093,,PLANNED,NOT_RUN
+FR-DASH-003,SentinelQA — Analytics & dashboard,Must,5,Analytics thanh toán (SQL KPI),UC-11,US-028,BR-REC-007,TS-092,,PLANNED,NOT_RUN
+FR-SEC-001,Bảo mật & truy cập,Should,6,Xác thực và phân quyền,UC-11,US-029,BR-PAY-004;BR-WH-001,TS-068;TS-069,BUG-015;BUG-017,PLANNED,NOT_RUN
