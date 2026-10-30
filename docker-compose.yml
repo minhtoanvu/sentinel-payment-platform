@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: sentinelqa
+      POSTGRES_USER: sentinelqa
+      POSTGRES_PASSWORD: sentinelqa_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sentinelqa"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://sentinelqa:sentinelqa_dev@db:5432/sentinelqa
+      ENVIRONMENT: development
+      LOG_LEVEL: DEBUG
+      WEBHOOK_SECRET: dev-webhook-secret-key-min-32-chars!!
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: uvicorn apps.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  pgdata:
