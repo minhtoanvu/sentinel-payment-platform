@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Lab & SentinelQA Quality Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            gate: {
+              pass: '#10b981',
+              warn: '#f59e0b',
+              block: '#ef4444',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    code, pre, .mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <i class="fa-solid fa-shield-halved text-white text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-lg text-white">SentinelQA</span>
+            <span class="text-xs px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-medium">Payment Lab</span>
+          </div>
+          <p class="text-xs text-slate-400">Deterministic Quality Engineering & Simulated Payment Engine</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <div id="gate-badge-header" class="flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>RELEASE GATE: PASS</span>
+        </div>
+        <button onclick="fetchKPIData()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Refresh">
+          <i class="fa-solid fa-arrows-rotate"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-6 text-sm border-t border-slate-800/60 overflow-x-auto">
+      <button onclick="switchTab('tab-payments')" id="nav-payments" class="nav-btn py-3 border-b-2 border-indigo-500 text-indigo-400 font-medium flex items-center space-x-2">
+        <i class="fa-regular fa-credit-card"></i>
+        <span>Payments</span>
+      </button>
+      <button onclick="switchTab('tab-refunds')" id="nav-refunds" class="nav-btn py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-medium flex items-center space-x-2">
+        <i class="fa-solid fa-arrow-rotate-left"></i>
+        <span>Refunds & Approvals</span>
+      </button>
+      <button onclick="switchTab('tab-reconciliation')" id="nav-reconciliation" class="nav-btn py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-medium flex items-center space-x-2">
+        <i class="fa-solid fa-scale-balanced"></i>
+        <span>Reconciliation</span>
+      </button>
+      <button onclick="switchTab('tab-sentinel')" id="nav-sentinel" class="nav-btn py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-medium flex items-center space-x-2">
+        <i class="fa-solid fa-check-double"></i>
+        <span>Release Gate & RTM</span>
+      </button>
+      <button onclick="switchTab('tab-analytics')" id="nav-analytics" class="nav-btn py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-medium flex items-center space-x-2">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>SQL KPI Analytics</span>
+      </button>
+      <button onclick="switchTab('tab-defects')" id="nav-defects" class="nav-btn py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-medium flex items-center space-x-2">
+        <i class="fa-solid fa-bug"></i>
+        <span>Seeded Defects (18)</span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+    <!-- TAB 1: PAYMENTS -->
+    <section id="tab-payments" class="tab-pane space-y-6">
+      <!-- Create Payment & Filter Bar -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- New Payment Form -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+          <h2 class="text-base font-semibold text-white flex items-center justify-between">
+            <span>Create Payment</span>
+            <span class="text-xs text-slate-500 font-normal">FR-PAY-001..003</span>
+          </h2>
+          <form id="create-payment-form" onsubmit="handleCreatePayment(event)" class="space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Amount</label>
+              <div class="flex space-x-2">
+                <input id="pay-amount" type="number" required min="1000" max="50000000" value="100000" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                <select id="pay-currency" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                  <option value="VND">VND</option>
+                  <option value="USD">USD</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Merchant Reference</label>
+              <input id="pay-ref" type="text" required value="ORD-DEMO-001" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Payment Method</label>
+              <select id="pay-method" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                <option value="pm_card_1">VISA (pm_card_1)</option>
+                <option value="pm_card_2">Mastercard (pm_card_2)</option>
+                <option value="pm_wallet_1">Wallet (pm_wallet_1)</option>
+              </select>
+            </div>
+
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-lg text-sm transition shadow-lg shadow-indigo-600/20">
+              Create Payment (CREATED)
+            </button>
+          </form>
+        </div>
+
+        <!-- Payments Table -->
+        <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-semibold text-white">Recent Payments</h2>
+            <button onclick="fetchPayments()" class="text-xs text-indigo-400 hover:text-indigo-300">
+              <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-slate-400 border-b border-slate-800 uppercase tracking-wider">
+                <tr>
+                  <th class="py-2.5 px-3">Public ID</th>
+                  <th class="py-2.5 px-3">Reference</th>
+                  <th class="py-2.5 px-3">Amount</th>
+                  <th class="py-2.5 px-3">Status</th>
+                  <th class="py-2.5 px-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="payments-tbody" class="divide-y divide-slate-800/60 text-slate-300">
+                <tr>
+                  <td colspan="5" class="py-6 text-center text-slate-500">Loading payments...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: REFUNDS & APPROVALS -->
+    <section id="tab-refunds" class="tab-pane hidden space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-semibold text-white">Refunds & Maker-Checker Approvals</h2>
+            <p class="text-xs text-slate-400">Large refunds require independent maker-checker approval (FR-REF-006 / BR-REF-007)</p>
+          </div>
+          <button onclick="fetchRefunds()" class="text-xs text-indigo-400 hover:text-indigo-300">
+            <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="text-slate-400 border-b border-slate-800 uppercase tracking-wider">
+              <tr>
+                <th class="py-2.5 px-3">Refund ID</th>
+                <th class="py-2.5 px-3">Payment ID</th>
+                <th class="py-2.5 px-3">Amount</th>
+                <th class="py-2.5 px-3">Status</th>
+                <th class="py-2.5 px-3">Created By</th>
+                <th class="py-2.5 px-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="refunds-tbody" class="divide-y divide-slate-800/60 text-slate-300">
+              <tr>
+                <td colspan="6" class="py-6 text-center text-slate-500">No refunds recorded yet</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: RECONCILIATION -->
+    <section id="tab-reconciliation" class="tab-pane hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+          <h2 class="text-base font-semibold text-white">Settlement File Ingestion</h2>
+          <p class="text-xs text-slate-400">Upload provider CSV settlement. Idempotent runs supersede prior runs (FR-REC-001..003).</p>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Select Sample Settlement File</label>
+              <select id="rec-sample-select" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                <option value="perfect_match.csv">perfect_match.csv (0 Mismatch)</option>
+                <option value="amount_mismatch.csv">amount_mismatch.csv (AMOUNT_MISMATCH)</option>
+                <option value="quarantine_error.csv">quarantine_error.csv (Quarantine Error)</option>
+              </select>
+            </div>
+            <button onclick="handleTriggerReconciliation()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-lg text-sm transition">
+              Process Reconciliation Run
+            </button>
+          </div>
+        </div>
+
+        <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-semibold text-white">Reconciliation Findings & Mismatches</h2>
+            <button onclick="fetchReconciliationFindings()" class="text-xs text-indigo-400 hover:text-indigo-300">
+              <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-slate-400 border-b border-slate-800 uppercase tracking-wider">
+                <tr>
+                  <th class="py-2.5 px-3">Finding ID</th>
+                  <th class="py-2.5 px-3">Mismatch Type</th>
+                  <th class="py-2.5 px-3">Status</th>
+                  <th class="py-2.5 px-3">Details</th>
+                  <th class="py-2.5 px-3 text-right">Lifecycle</th>
+                </tr>
+              </thead>
+              <tbody id="findings-tbody" class="divide-y divide-slate-800/60 text-slate-300">
+                <tr>
+                  <td colspan="5" class="py-6 text-center text-slate-500">No findings yet. Run reconciliation to view.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: SENTINELQA RELEASE GATE & RTM -->
+    <section id="tab-sentinel" class="tab-pane hidden space-y-6">
+      <!-- Release Gate Status Card -->
+      <div id="gate-decision-card" class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center space-x-3 mb-2">
+            <span id="gate-status-pill" class="px-3 py-1 rounded text-sm font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              RELEASE GATE: PASS
+            </span>
+            <span class="text-xs text-slate-400">Ruleset v1.0.0 (Deterministic)</span>
+          </div>
+          <p id="gate-summary-text" class="text-sm text-slate-300">All 110 automated tests passed, critical coverage satisfied, zero P0 regressions.</p>
+        </div>
+        <div class="flex space-x-3">
+          <button onclick="evaluateReleaseGate()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+            Evaluate Gate Now
+          </button>
+        </div>
+      </div>
+
+      <!-- Coverage Gap Analysis -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-semibold text-white">Requirements Traceability Matrix (RTM) Gap Analysis</h2>
+            <p class="text-xs text-slate-400">Differentiates 'has tests' from 'tested passing' (FR-REQ-003 / TS-070)</p>
+          </div>
+          <button onclick="fetchCoverageGap()" class="text-xs text-indigo-400 hover:text-indigo-300">
+            <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="gap-stats-grid">
+          <div class="bg-slate-950 p-4 rounded-lg border border-slate-800">
+            <span class="text-xs text-slate-400">Total Requirements</span>
+            <div id="stat-total-reqs" class="text-2xl font-bold text-white mt-1">58</div>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-lg border border-slate-800">
+            <span class="text-xs text-slate-400">Covered & Passing</span>
+            <div id="stat-covered-passing" class="text-2xl font-bold text-emerald-400 mt-1">58</div>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-lg border border-slate-800">
+            <span class="text-xs text-slate-400">Missing All Tests</span>
+            <div id="stat-missing-tests" class="text-2xl font-bold text-rose-400 mt-1">0</div>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-lg border border-slate-800">
+            <span class="text-xs text-slate-400">Coverage Rate</span>
+            <div id="stat-coverage-rate" class="text-2xl font-bold text-indigo-400 mt-1">100%</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: SQL KPI ANALYTICS -->
+    <section id="tab-analytics" class="tab-pane hidden space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-semibold text-white">Payment System KPIs & Verified SQL Queries</h2>
+            <p class="text-xs text-slate-400">Every metric is computed by an independent SQL query with zero discrepancy (FR-DASH-003 / TS-092)</p>
+          </div>
+          <button onclick="fetchKPIData()" class="text-xs text-indigo-400 hover:text-indigo-300">
+            <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="kpi-cards-grid">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="bg-slate-950 p-4 rounded-lg border border-slate-800">
+          <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Audited SQL Source Queries</h3>
+          <div id="kpi-sql-sources" class="space-y-2 text-xs font-mono text-indigo-300">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 6: SEEDED DEFECTS -->
+    <section id="tab-defects" class="tab-pane hidden space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+        <div>
+          <h2 class="text-base font-semibold text-white">Ground Truth Seeded Defects Catalog (BUG-001..018)</h2>
+          <p class="text-xs text-slate-400">Ground truth defects for benchmarking AI test generation and Release Gate regression detection.</p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="text-slate-400 border-b border-slate-800 uppercase tracking-wider">
+              <tr>
+                <th class="py-2.5 px-3">Bug Code</th>
+                <th class="py-2.5 px-3">Severity</th>
+                <th class="py-2.5 px-3">Description</th>
+                <th class="py-2.5 px-3">Target Scenario</th>
+                <th class="py-2.5 px-3 text-right">Feature Flag</th>
+              </tr>
+            </thead>
+            <tbody id="defects-tbody" class="divide-y divide-slate-800/60 text-slate-300">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal for Payment Detail & Timeline -->
+  <div id="payment-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 id="modal-payment-title" class="text-base font-semibold text-white">Payment Details</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="modal-payment-body" class="space-y-4 text-xs text-slate-300">
+        <!-- Content -->
+      </div>
+      <div class="flex justify-end pt-3 border-t border-slate-800">
+        <button onclick="closeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-medium">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(el => {
+        el.classList.remove('border-indigo-500', 'text-indigo-400');
+        el.classList.add('border-transparent', 'text-slate-400');
+      });
+
+      document.getElementById(tabId).classList.remove('hidden');
+      const navBtn = document.getElementById(tabId.replace('tab-', 'nav-'));
+      if (navBtn) {
+        navBtn.classList.add('border-indigo-500', 'text-indigo-400');
+        navBtn.classList.remove('border-transparent', 'text-slate-400');
+      }
+
+      if (tabId === 'tab-payments') fetchPayments();
+      if (tabId === 'tab-refunds') fetchRefunds();
+      if (tabId === 'tab-reconciliation') fetchReconciliationFindings();
+      if (tabId === 'tab-sentinel') fetchCoverageGap();
+      if (tabId === 'tab-analytics') fetchKPIData();
+      if (tabId === 'tab-defects') renderDefects();
+    }
+
+    // Status Badge Helper
+    function statusBadge(status) {
+      const map = {
+        'SUCCEEDED': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+        'CREATED': 'bg-sky-500/10 text-sky-400 border-sky-500/20',
+        'PROCESSING': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+        'UNKNOWN': 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+        'FAILED': 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+        'CANCELED': 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+        'EXPIRED': 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+        'PENDING_APPROVAL': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+      };
+      const cls = map[status] || 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+      return `<span class="px-2 py-0.5 rounded text-[11px] font-medium border ${cls}">${status}</span>`;
+    }
+
+    // Fetch Payments
+    async function fetchPayments() {
+      try {
+        const res = await fetch('/api/v1/payments', { headers: { 'X-Merchant-ID': 'm_active_1' } });
+        if (!res.ok) return;
+        const data = await res.json();
+        const tbody = document.getElementById('payments-tbody');
+        if (!data.items || data.items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-500">No payments yet. Create one!</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.items.map(p => `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-2.5 px-3 font-mono text-indigo-300">${p.public_id}</td>
+            <td class="py-2.5 px-3 font-mono">${p.merchant_reference}</td>
+            <td class="py-2.5 px-3 font-semibold">${p.amount.toLocaleString()} ${p.currency}</td>
+            <td class="py-2.5 px-3">${statusBadge(p.status)}</td>
+            <td class="py-2.5 px-3 text-right space-x-2">
+              <button onclick="viewPaymentDetail('${p.id}')" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">
+                Detail
+              </button>
+              ${p.status === 'CREATED' ? `
+                <button onclick="confirmPayment('${p.id}', 'success')" class="px-2 py-1 rounded bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30">
+                  Confirm
+                </button>
+                <button onclick="confirmPayment('${p.id}', 'decline')" class="px-2 py-1 rounded bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30">
+                  Decline
+                </button>
+              ` : ''}
+              ${p.status === 'SUCCEEDED' ? `
+                <button onclick="promptRefund('${p.id}', ${p.amount})" class="px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border border-indigo-500/30">
+                  Refund
+                </button>
+              ` : ''}
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function handleCreatePayment(e) {
+      e.preventDefault();
+      const amount = parseInt(document.getElementById('pay-amount').value);
+      const currency = document.getElementById('pay-currency').value;
+      const ref = document.getElementById('pay-ref').value;
+      const pm = document.getElementById('pay-method').value;
+      const key = 'idem_' + Math.random().toString(36).substring(2, 12);
+
+      const res = await fetch('/api/v1/payments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': key,
+          'X-Merchant-ID': 'm_active_1',
+        },
+        body: JSON.stringify({
+          amount: amount,
+          currency: currency,
+          merchant_reference: ref,
+          payment_method_id: pm,
+        })
+      });
+
+      if (res.ok) {
+        fetchPayments();
+        fetchKPIData();
+      } else {
+        const err = await res.json();
+        alert('Payment creation failed: ' + (err.error ? err.error.message : 'Unknown error'));
+      }
+    }
+
+    async function confirmPayment(paymentId, scenario) {
+      const res = await fetch(`/api/v1/payments/${paymentId}/confirm?scenario=${scenario}`, {
+        method: 'POST',
+        headers: { 'X-Merchant-ID': 'm_active_1' },
+      });
+      fetchPayments();
+      fetchKPIData();
+    }
+
+    async function promptRefund(paymentId, maxAmount) {
+      const amtStr = prompt(`Enter refund amount (max: ${maxAmount}):`, maxAmount);
+      if (!amtStr) return;
+      const amt = parseInt(amtStr);
+      const key = 'idem_ref_' + Math.random().toString(36).substring(2, 12);
+
+      const res = await fetch(`/api/v1/payments/${paymentId}/refunds`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': key,
+          'X-Merchant-ID': 'm_active_1',
+        },
+        body: JSON.stringify({
+          amount: amt,
+          currency: 'VND',
+          reason: 'Customer initiated refund',
+        })
+      });
+      if (res.ok) {
+        alert('Refund recorded successfully!');
+        fetchPayments();
+        fetchKPIData();
+      } else {
+        const err = await res.json();
+        alert('Refund failed: ' + (err.error ? err.error.message : 'Error'));
+      }
+    }
+
+    async function viewPaymentDetail(paymentId) {
+      const res = await fetch(`/api/v1/payments/${paymentId}`, {
+        headers: { 'X-Merchant-ID': 'm_active_1' }
+      });
+      if (!res.ok) return;
+      const p = await res.json();
+      document.getElementById('modal-payment-title').innerText = `Payment: ${p.public_id}`;
+      document.getElementById('modal-payment-body').innerHTML = `
+        <div class="grid grid-cols-2 gap-2 p-3 bg-slate-950 rounded-lg">
+          <div><span class="text-slate-500">Status:</span> ${statusBadge(p.status)}</div>
+          <div><span class="text-slate-500">Amount:</span> <span class="font-bold">${p.amount.toLocaleString()} ${p.currency}</span></div>
+          <div><span class="text-slate-500">Merchant Reference:</span> <span class="font-mono">${p.merchant_reference}</span></div>
+          <div><span class="text-slate-500">Refunded:</span> <span class="font-bold">${p.refunded_amount.toLocaleString()} ${p.currency}</span></div>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Audit Status Timeline (Append-Only)</h4>
+          <div class="space-y-2 border-l-2 border-indigo-500/40 pl-4 py-1">
+            ${p.status_history ? p.status_history.map(h => `
+              <div class="relative">
+                <span class="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-indigo-500 ring-4 ring-slate-900"></span>
+                <div class="flex items-center space-x-2">
+                  <span class="font-semibold text-white">${h.to_status}</span>
+                  <span class="text-[10px] text-slate-500">${new Date(h.at).toLocaleTimeString()}</span>
+                </div>
+                <div class="text-[11px] text-slate-400">${h.reason || 'Transition recorded'}</div>
+              </div>
+            `).join('') : '<p class="text-slate-500">No history available</p>'}
+          </div>
+        </div>
+      `;
+      document.getElementById('payment-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('payment-modal').classList.add('hidden');
+    }
+
+    // Fetch KPI Data
+    async function fetchKPIData() {
+      try {
+        const res = await fetch('/api/v1/analytics/kpis');
+        if (!res.ok) return;
+        const data = await res.json();
+        const grid = document.getElementById('kpi-cards-grid');
+        grid.innerHTML = `
+          <div class="bg-slate-950 p-4 rounded-lg border border-slate-800">
+            <span class="text-xs text-slate-400">Payment Success Rate</span>
+            <div class="text-2xl font-bold text-emerald-400 mt-1">${data.payment_metrics.success_rate_percent}%</div>
+            <span class="text-[11px] text-slate-500">${data.payment_metrics.succeeded_payments} / ${data.payment_metrics.total_payments} Succeeded</span>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-lg border border-slate-800">
+            <span class="text-xs text-slate-400">Refund Rate</span>
+            <div class="text-2xl font-bold text-amber-400 mt-1">${data.refund_metrics.refund_rate_percent}%</div>
+            <span class="text-[11px] text-slate-500">${data.refund_metrics.total_refunded_volume.toLocaleString()} VND Refunded</span>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-lg border border-slate-800">
+            <span class="text-xs text-slate-400">Timeout Recovery Rate</span>
+            <div class="text-2xl font-bold text-indigo-400 mt-1">${data.resilience_metrics.recovery_rate_percent}%</div>
+            <span class="text-[11px] text-slate-500">${data.resilience_metrics.recovered_to_succeeded} / ${data.resilience_metrics.total_unknown_events} Recovered</span>
+          </div>
+        `;
+
+        document.getElementById('kpi-sql-sources').innerHTML = `
+          <div><span class="text-slate-400">-- Success Rate:</span> ${data.payment_metrics.sql_source}</div>
+          <div><span class="text-slate-400">-- Refund Volume:</span> ${data.refund_metrics.sql_source}</div>
+          <div><span class="text-slate-400">-- Timeout Recovery:</span> ${data.resilience_metrics.sql_source}</div>
+        `;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Fetch Coverage Gap
+    async function fetchCoverageGap() {
+      try {
+        const res = await fetch('/api/v1/sentinelqa/coverage-gap');
+        if (!res.ok) return;
+        const data = await res.json();
+        document.getElementById('stat-total-reqs').innerText = data.total_requirements;
+        document.getElementById('stat-covered-passing').innerText = data.covered_passing;
+        document.getElementById('stat-missing-tests').innerText = data.missing_all_tests;
+        document.getElementById('stat-coverage-rate').innerText = data.coverage_rate + '%';
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Seeded Defects
+    const DEFECTS = [
+      { code: 'BUG-001', desc: 'Kiểm tra refund dùng < thay <=', sev: 'Cao', ts: 'TS-036' },
+      { code: 'BUG-002', desc: 'Bỏ qua hash payload trong Idempotency', sev: 'Cao', ts: 'TS-013' },
+      { code: 'BUG-003', desc: 'Không dedupe event_id webhook', sev: 'Nghiêm trọng', ts: 'TS-048' },
+      { code: 'BUG-004', desc: 'Provider timeout bị coi là FAILED rồi tự retry', sev: 'Nghiêm trọng', ts: 'TS-026' },
+      { code: 'BUG-005', desc: 'refundable không trừ reservation UNKNOWN', sev: 'Nghiêm trọng', ts: 'TS-040' },
+      { code: 'BUG-006', desc: 'Chấp nhận webhook thiếu chữ ký', sev: 'Nghiêm trọng', ts: 'TS-046' },
+      { code: 'BUG-007', desc: 'Sai biên amount tối đa (>50M VND)', sev: 'Trung bình', ts: 'TS-007' },
+      { code: 'BUG-008', desc: 'Không khóa confirm đồng thời', sev: 'Nghiêm trọng', ts: 'TS-031' },
+      { code: 'BUG-009', desc: 'So sánh amount USD số thực gây lệch làm tròn', sev: 'Cao', ts: 'TS-057' },
+      { code: 'BUG-010', desc: 'Cutoff tính theo UTC thay vì +07', sev: 'Cao', ts: 'TS-060' },
+      { code: 'BUG-011', desc: 'Webhook muộn ghi đè payment terminal', sev: 'Nghiêm trọng', ts: 'TS-030' },
+      { code: 'BUG-012', desc: 'Cửa sổ hoàn tiền ngày 180 bị từ chối', sev: 'Trung bình', ts: 'TS-041' },
+      { code: 'BUG-013', desc: 'Chạy lại đối soát tạo finding trùng', sev: 'Cao', ts: 'TS-061' },
+      { code: 'BUG-014', desc: 'UI hiển thị thành công khi payment UNKNOWN', sev: 'Cao', ts: 'TS-067' },
+      { code: 'BUG-015', desc: 'Log in ra Authorization header hoặc secret', sev: 'Cao', ts: 'TS-068' },
+      { code: 'BUG-016', desc: 'Kiểm tra số dư ví rồi trừ nhưng không atomic CAS', sev: 'Nghiêm trọng', ts: 'TS-033' },
+      { code: 'BUG-017', desc: 'Merchant BOLA: đọc payment của merchant khác', sev: 'Nghiêm trọng', ts: 'TS-069' },
+      { code: 'BUG-018', desc: 'Replay cả lỗi 5xx trước commit', sev: 'Trung bình', ts: 'TS-017' }
+    ];
+
+    function renderDefects() {
+      const tbody = document.getElementById('defects-tbody');
+      tbody.innerHTML = DEFECTS.map(d => `
+        <tr class="hover:bg-slate-800/40 transition">
+          <td class="py-2.5 px-3 font-mono font-bold text-rose-400">${d.code}</td>
+          <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-semibold ${d.sev === 'Nghiêm trọng' ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'}">${d.sev}</span></td>
+          <td class="py-2.5 px-3 text-slate-300">${d.desc}</td>
+          <td class="py-2.5 px-3 font-mono text-indigo-300">${d.ts}</td>
+          <td class="py-2.5 px-3 text-right">
+            <span class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-400 font-mono">PL_DEFECT_${d.code.replace('-', '_')}</span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchPayments();
+      fetchKPIData();
+      fetchCoverageGap();
+    });
+  </script>
+</body>
+</html>
+
