@@ -1,0 +1,4 @@
+provider_reference,amount,currency,status
+sim_ch_demo_succ_01,480000,VND,SUCCESS
+sim_ch_demo_ref_04,2000000,VND,SUCCESS
+
